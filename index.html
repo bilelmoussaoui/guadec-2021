@@ -12,6 +12,10 @@
   <link rel="stylesheet" href="reveal.js/dist/reveal.css">
   <link rel="stylesheet" href="reveal.js/plugin/highlight/zenburn.css" />
   <style>
+    pre code {
+      font-size: 14px;
+    }
+
     span.smallcaps {
       font-variant: small-caps;
     }
@@ -33,6 +37,22 @@
 
     ul.task-list {
       list-style: none;
+    }
+
+    .side-by-side {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-flow: row;
+      transform: translateX(-10%);
+    }
+
+    .side {
+      flex-grow: 1;
+    }
+
+    .side.figure-side {
+      flex-shrink: 0;
     }
   </style>
   <link rel="stylesheet" href="reveal.js/dist/theme/beige.css" id="theme">
@@ -71,84 +91,487 @@
       <section>
         <section>
           <h3>Subclassing support</h3>
+          <div class="fragment">
+            <ul>
+              <li>GLib Rust bindings contains the base code for creating custom GObjects, e.g subclassing.
+                <small style="margin-top: 20px;margin-bottom: 20px;"><a
+                    href="https://gtk-rs.org/gtk-rs-core/stable/latest/docs/glib/subclass">See https:
+                    //gtk-rs.org/gtk-rs-core/stable/latest/docs/glib/subclass for details</https:></a>
+                </small>
+              </li>
+              <li>
+                Thanks to the simplifications of creating custom widgets in GTK 4, the Rust bindings provides almost
+                complete subclassing support
+              </li>
+              <li>
+                Various examples in gtk4-rs/examples
+              </li>
+            </ul>
+          </div>
         </section>
+
         <section>
+          <p>Let's see how we can create a custom glib::Object</p>
+          <pre class="fragment" lang="rust">
+<code data-trim data-noescape data-line-numbers="5-6|8-13|14|3-15|17-19|21-25">
+  <script type="text/template">
+
+            use glib::subclass:prelude::*;
+
+            mod imp {
+                use super::*;
+                #[derive(Default)]
+                pub struct SomeObject;
+
+                #[glib::object_subclass]
+                impl ObjectSubclass for SomeObject {
+                    const NAME: &'static str = "SomeObject";
+                    type Type = super::SomeObject;
+                    type ParentType = glib::Object;
+                }
+                impl ObjectImpl for SomeObject {}
+            }
+
+            glib::wrapper! {
+                pub struct SomeObject(ObjectSubclass<imp::SomeObject>);
+            }
+
+            impl SomeObject {
+                pub fn new() -> Self {
+                    glib::Object::new(&[]).unwrap()
+                }
+            }
+
+          </script>
+          </code>
+          </pre>
+        </section>
+
+        <section>
+          <p>What if we want to create a custom <code>gtk::Widget</code>?</p>
+          <pre class="fragment" lang="rust">
+            <code data-trim data-noescape data-line-numbers="13,16,20">
+              <script type="text/template">
+
+            use gtk::subclass:prelude::*;
+            use gtk::glib;
+
+            mod imp {
+                use super::*;
+                #[derive(Default)]
+                pub struct CustomWidget;
+
+                #[glib::object_subclass]
+                impl ObjectSubclass for CustomWidget {
+                    const NAME: &'static str = "CustomWidget";
+                    type Type = super::CustomWidget;
+                    type ParentType = gtk::Widget;
+                }
+                impl ObjectImpl for CustomWidget {}
+                impl WidgetImpl for CustomWidget {}
+            }
+
+            glib::wrapper! {
+                pub struct CustomWidget(ObjectSubclass<imp::CustomWidget>) @extends gtk::Widget;
+            }
+
+            impl CustomWidget {
+                pub fn new() -> Self {
+                    glib::Object::new(&[]).unwrap()
+                }
+            }
+          </script>
+          </code>
+          </pre>
+        </section>
+
+        <section>
+          <p>We can override functions that changes a behavior. They are called virtual functions</p>
+
+          <pre class="fragment" lang="rust">
+            <code data-trim data-noescape data-line-numbers="23-28">
+              <script type="text/template">
+
+          use gtk::prelude::*;
+          use gtk::subclass::prelude::*;
+          use gtk::{gdk, glib, graphene};
+
+          mod imp {
+              use super::*;
+              #[derive(Default)]
+              pub struct CustomWidget;
+
+              #[glib::object_subclass]
+              impl ObjectSubclass for CustomWidget {
+                  const NAME: &'static str = "CustomWidget";
+                  type Type = super::CustomWidget;
+                  type ParentType = gtk::Widget;
+              }
+              impl ObjectImpl for CustomWidget {
+                  fn constructed(&self, obj: &Self::Type) {
+                      obj.set_width_request(40);
+                      obj.set_height_request(40);
+                  }
+              }
+              impl WidgetImpl for CustomWidget {
+                  fn snapshot(&self, widget: &Self::Type, snapshot: &gtk::Snapshot) {
+                      snapshot.append_color(
+                          &gdk::RGBA::black(),
+                          &graphene::Rect::new(0.0, 0.0, widget.width() as f32, widget.height() as f32),
+                      );
+                  }
+              }
+          }
+
+          glib::wrapper! {
+              pub struct CustomWidget(ObjectSubclass<imp::CustomWidget>) @extends gtk::Widget;
+          }
+
+          impl CustomWidget {
+              pub fn new() -> Self {
+                  glib::Object::new(&[]).unwrap()
+              }
+          }
+        </script>
+      </code>
+          </pre>
+          <p class="fragment">
+            By overriding snapshot, we tell the renderer how our widget should be displayed
+          </p>
+        </section>
+
+        <section>
+          <p>Let's see how our widget looks like</p>
+          <div class="side-by-side fragment">
+            <div class="side">
+              <pre lang="rust">
+                <code data-trim data-noescape data-line-numbers="19-22">
+                  use gtk::prelude::*;
+
+                  mod custom_widget;
+                  use crate::custom_widget::CustomWidget;
+
+                  fn main() {
+                      let application = gtk::Application::builder()
+                          .application_id("org.guadec.talk.rust")
+                          .build();
+
+                      application.connect_activate(|app| {
+                          let window = gtk::ApplicationWindow::builder()
+                              .application(app)
+                              .default_width(350)
+                              .default_height(350)
+                              .title("Custom Widget")
+                              .build();
+
+                          let custom_widget = CustomWidget::new();
+                          window.set_child(Some(&custom_widget));
+
+                          window.show();
+                      });
+
+                      application.run();
+                  }
+        
+                </code>
+              </pre>
+            </div>
+            <div class="side figure-side">
+              <figure>
+                <img src="assets/subclassing-demo-1.png" />
+              </figure>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <p>
+            What if we wanted to make the rendered color based on a property
+          </p>
+
+          <pre class="fragment" lang="rust">
+            <code data-trim data-noescape data-line-numbers="13|23-34|36-41|43-50">
+              <script type="text/template">
+
+        use gtk::prelude::*;
+        use gtk::subclass::prelude::*;
+        use gtk::{gdk, glib, graphene};
+        
+        mod imp {
+            use super::*;
+            use glib::{ParamSpec, Value};
+            use once_cell::sync::Lazy;
+            use std::cell::RefCell;
+        
+            #[derive(Default)]
+            pub struct CustomWidget {
+                rgba: RefCell<Option<gdk::RGBA>>,
+            }
+        
+            #[glib::object_subclass]
+            impl ObjectSubclass for CustomWidget {
+                const NAME: &'static str = "CustomWidget";
+                type Type = super::CustomWidget;
+                type ParentType = gtk::Widget;
+            }
+            impl ObjectImpl for CustomWidget {
+                fn properties() -> &'static [ParamSpec] {
+                    static PROPS: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+                        vec![ParamSpec::new_boxed(
+                            "rgba",
+                            "RGBA",
+                            "Color RGBA",
+                            gdk::RGBA::static_type(),
+                            glib::ParamFlags::READWRITE,
+                        )]
+                    });
+                    PROPS.as_ref()
+                }
+        
+                fn property(&self, _obj: &Self::Type, _id: usize, pspec: &ParamSpec) -> Value {
+                    match pspec.name() {
+                        "rgba" => self.rgba.borrow().to_value(),
+                        _ => unimplemented!(),
+                    }
+                }
+        
+                fn set_property(&self, _obj: &Self::Type, _id: usize, value: &Value, pspec: &ParamSpec) {
+                    match pspec.name() {
+                        "rgba" => {
+                            self.rgba.borrow_mut().replace(value.get().unwrap());
+                        }
+                        _ => unimplemented!(),
+                    }
+                }
+        
+                fn constructed(&self, obj: &Self::Type) {
+                    obj.set_width_request(40);
+                    obj.set_height_request(40);
+                }
+            }
+            impl WidgetImpl for CustomWidget {
+                fn snapshot(&self, widget: &Self::Type, snapshot: &gtk::Snapshot) {
+                    let color = self.rgba.borrow().unwrap_or_else(|| gdk::RGBA::black());
+                    snapshot.append_color(
+                        &color,
+                        &graphene::Rect::new(0.0, 0.0, widget.width() as f32, widget.height() as f32),
+                    );
+                }
+            }
+        }
+        
+        glib::wrapper! {
+            pub struct CustomWidget(ObjectSubclass<imp::CustomWidget>) @extends gtk::Widget;
+        }
+        
+        impl CustomWidget {
+            pub fn new() -> Self {
+                glib::Object::new(&[]).unwrap()
+            }
+        }
+      </script>
+      </code>
+          </pre>
+        </section>
+
+
+        <section>
+          <p>Let's see how our widget looks like</p>
+          <div class="side-by-side fragment">
+            <div class="side">
+              <pre lang="rust">
+                <code data-trim data-noescape data-line-numbers="22-24">
+                  use gtk::gdk;
+                  use gtk::prelude::*;
+                  use std::str::FromStr;
+
+                  mod custom_widget;
+                  use crate::custom_widget::CustomWidget;
+
+                  fn main() {
+                      let application = gtk::Application::builder()
+                          .application_id("org.guadec.talk.rust")
+                          .build();
+
+                      application.connect_activate(|app| {
+                          let window = gtk::ApplicationWindow::builder()
+                              .application(app)
+                              .default_width(350)
+                              .default_height(350)
+                              .title("Custom Widget")
+                              .build();
+
+                          let custom_widget = CustomWidget::new();
+                          custom_widget
+                              .set_property("rgba", &gdk::RGBA::from_str("#cc9393").unwrap())
+                              .unwrap();
+                          window.set_child(Some(&custom_widget));
+
+                          window.show();
+                      });
+
+                      application.run();
+                  }
+
+                </code>
+              </pre>
+            </div>
+            <div class="side figure-side">
+              <figure>
+                <img src="assets/subclassing-demo-2.png" />
+              </figure>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section>
+        <section>
+          <h3>Composite Templates</h3>
           <ul>
-            <li>GLib Rust bindings contains the base code for creating custom GObjects, e.g subclassing.</li>
+            <li class="fragment">Allows splitting code into model/view</li>
+            <li class="fragment">More stuff here maybe?</li>
           </ul>
-          <small style="margin-top: 80px;margin-left: -120px;"><a
-              href="https://gtk-rs.org/gtk-rs-core/stable/latest/docs/glib/subclass">See https:
-              //gtk-rs.org/gtk-rs-core/stable/latest/docs/glib/subclass for details</https:></a>
-          </small>
+          <p class="fragment">Before continuing forward, let's try to modify the subclassing example to add a label that
+            display the HEX color</p>
         </section>
         <section>
-          <pre lang="rust">
-<code data-trim data-noescape data-line-numbers="1|5-6|8-13|14|3-15|17-19|21-25">
-use glib::subclass:prelude::*;
+          <div class="side-by-side">
+            <div class="side">
 
-mod imp {
-  use super::*;
-  #[derive(Default)]
-  pub struct SomeObject;
+              <pre lang="rust">
+            <code data-trim data-noescape data-line-numbers="13|62-76|80-98|107">
+              <script type="text/template">
+          use gtk::prelude::*;
+          use gtk::subclass::prelude::*;
+          use gtk::{gdk, glib, graphene};
 
-  #[glib::object_subclass]
-  impl ObjectSubclass for SomeObject {
-      const NAME: &'static str = "SomeObject";
-      type Type = super::SomeObject;
-      type ParentType = glib::Object;
-  }
-  impl ObjectImpl for SomeObject {}
-}
+          mod imp {
+              use super::*;
+              use glib::{ParamSpec, Value};
+              use once_cell::sync::Lazy;
+              use std::cell::RefCell;
 
-glib::wrapper! {
-  pub struct SomeObject(ObjectSubclass&#x3C;imp::SomeObject&#x3E;);
-}
+              pub struct CustomWidget {
+                  rgba: RefCell<Option<gdk::RGBA>>,
+                  label: gtk::Label,
+              }
 
-impl SomeObject {
-  pub fn new() -> Self {
-      glib::Object::new(&[]).unwrap()
-  }
-}
+              impl Default for CustomWidget {
+                  fn default() -> Self {
+                      Self {
+                          rgba: RefCell::default(),
+                          label: gtk::Label::new(None),
+                      }
+                  }
+              }
 
-          </code>
+              #[glib::object_subclass]
+              impl ObjectSubclass for CustomWidget {
+                  const NAME: &'static str = "CustomWidget";
+                  type Type = super::CustomWidget;
+                  type ParentType = gtk::Widget;
+              }
+
+              impl ObjectImpl for CustomWidget {
+                  fn properties() -> &'static [ParamSpec] {
+                      static PROPS: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+                          vec![ParamSpec::new_boxed(
+                              "rgba",
+                              "RGBA",
+                              "Color RGBA",
+                              gdk::RGBA::static_type(),
+                              glib::ParamFlags::READWRITE,
+                          )]
+                      });
+                      PROPS.as_ref()
+                  }
+
+                  fn property(&self, _obj: &Self::Type, _id: usize, pspec: &ParamSpec) -> Value {
+                      match pspec.name() {
+                          "rgba" => self.rgba.borrow().to_value(),
+                          _ => unimplemented!(),
+                      }
+                  }
+
+                  fn set_property(&self, _obj: &Self::Type, _id: usize, value: &Value, pspec: &ParamSpec) {
+                      match pspec.name() {
+                          "rgba" => {
+                              self.rgba.borrow_mut().replace(value.get().unwrap());
+                          }
+                          _ => unimplemented!(),
+                      }
+                  }
+
+                  fn constructed(&self, obj: &Self::Type) {
+                      self.label.set_parent(obj);
+                      self.label.add_css_class("title-1");
+
+                      obj.bind_property("rgba", &self.label, "label")
+                          .transform_to(move |_, val| {
+                              let rgba = val.get::<gdk::RGBA>().unwrap();
+                              Some(rgba.to_string().to_value())
+                          })
+                          .build();
+                  }
+
+                  fn dispose(&self, _obj: &Self::Type) {
+                      self.label.unparent();
+                  }
+              }
+
+              impl WidgetImpl for CustomWidget {
+                  fn measure(
+                      &self,
+                      _widget: &Self::Type,
+                      _orientation: gtk::Orientation,
+                      _for_size: i32,
+                  ) -> (i32, i32, i32, i32) {
+                      (250, 250, -1, -1)
+                  }
+
+                  fn size_allocate(&self, _widget: &Self::Type, width: i32, height: i32, baseline: i32) {
+                      self.label.size_allocate(
+                          &gtk::Allocation {
+                              x: 0,
+                              y: 0,
+                              width,
+                              height,
+                          },
+                          baseline,
+                      );
+                  }
+
+                  fn snapshot(&self, widget: &Self::Type, snapshot: &gtk::Snapshot) {
+                      let color = self.rgba.borrow().unwrap_or_else(|| gdk::RGBA::black());
+                      snapshot.append_color(
+                          &color,
+                          &graphene::Rect::new(0.0, 0.0, widget.width() as f32, widget.height() as f32),
+                      );
+                      widget.snapshot_child(&self.label, snapshot);
+                  }
+              }
+          }
+
+          glib::wrapper! {
+              pub struct CustomWidget(ObjectSubclass<imp::CustomWidget>) @extends gtk::Widget;
+          }
+
+          impl CustomWidget {
+              pub fn new() -> Self {
+                  glib::Object::new(&[]).unwrap()
+              }
+          }
+        </script>
+              </code>
           </pre>
-        </section>
-
-        <section>
-          <h5>How does that looks like in the case of a custom GTK Widget</h5>
-          <pre lang="rust">
-<code data-trim data-noescape data-line-numbers="13|16|20-21">
-use gtk::subclass:prelude::*;
-use gtk::prelude::*;
-
-mod imp {
-  use super::*;
-  #[derive(Default)]
-  pub struct CustomWidget;
-
-  #[glib::object_subclass]
-  impl ObjectSubclass for CustomWidget {
-      const NAME: &'static str = "CustomWidget";
-      type Type = super::CustomWidget;
-      type ParentType = gtk::Widget;
-  }
-  impl ObjectImpl for CustomWidget {}
-  impl WidgetImpl for CustomWidget {}
-}
-
-glib::wrapper! {
-  pub struct CustomWidget(ObjectSubclass&#x3C;imp::CustomWidget&#x3E;)
-    @extends gtk::Widget;
-}
-
-impl CustomWidget {
-  pub fn new() -> Self {
-      glib::Object::new(&[]).unwrap()
-  }
-}
-
-          </code>
-          </pre>
+            </div>
+            <div class="fragment side figure-side">
+              <figure>
+                <img src="assets/subclassing-demo-3.png" />
+              </figure>
+            </div>
+          </div>
         </section>
       </section>
     </div>
@@ -159,11 +582,9 @@ impl CustomWidget {
   // reveal.js plugins
   <script src="reveal.js/plugin/notes/notes.js"></script>
   <script src="reveal.js/plugin/search/search.js"></script>
-  <script src="reveal.js/plugin/zoom/zoom.js"></script>
   <script src="reveal.js/plugin/markdown/markdown.js"></script>
   <script src="reveal.js/plugin/highlight/highlight.js"></script>
   <script>
-
     // Full list of configuration options available at:
     // https://revealjs.com/config/
     Reveal.initialize({
@@ -178,7 +599,6 @@ impl CustomWidget {
       plugins: [
         RevealNotes,
         RevealSearch,
-        RevealZoom,
         RevealMarkdown,
         RevealHighlight,
       ]
