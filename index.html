@@ -2,15 +2,22 @@
 <html>
 
 <head>
-  <meta charset="utf-8">
-  <title>Write GTK applications using Rust</title>
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="utf-8" />
+  <title>Writing applications using GTK 4 & Rust</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="#f7f3de" />
   <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="bilelmoussaoui" />
+  <meta name="twitter:creator" content="bilelmoussaoui" />
+  <meta property="og:url" content="https://bilelmoussaoui.github.io/guadec-2021/" />
+  <meta property="og:title" content="Writing applications using GTK 4 & Rust" />
+  <meta property="og:description" content="Slides of the GTK & Rust GUADEC 2021 talk" />
   <link rel="stylesheet" href="reveal.js/dist/reset.css">
   <link rel="stylesheet" href="reveal.js/dist/reveal.css">
   <link rel="stylesheet" href="reveal.js/plugin/highlight/zenburn.css" />
+  <link rel="icon" href="assets/ferris.svg" />
   <style>
     pre code {
       font-size: 14px;
@@ -67,10 +74,10 @@
         <h2>Writing applications using GTK 4 &amp; Rust</h2>
         <div style="display:flex;flex-direction: row; justify-content:center;">
           <div>
-            <img width="120px" height="120px" src="https://upload.wikimedia.org/wikipedia/commons/7/71/GTK_logo.svg" />
+            <img width="120px" height="120px" src="assets/gtk.svg" />
           </div>
           <div>
-            <img width="120px" height="120px" src="https://rustacean.net/assets/rustacean-orig-noshadow.svg" />
+            <img width="120px" height="120px" src="assets/ferris.svg" />
           </div>
         </div>
         <div style="font-size: 14px; text-align: right;">
@@ -106,7 +113,7 @@
 
       <section>
         <section>
-          <h3>Subclassing support</h3>
+          <h3>Create a custom widget</h3>
           <div class="fragment">
             <ul>
               <li>GLib Rust bindings contains the base code for creating custom GObjects, e.g subclassing.
@@ -448,8 +455,8 @@
           </ul>
         </section>
         <section>
-          <p>Before continuing forward, let's try to modify the subclassing example to add a label that
-            display the HEX color</p>
+          <p>Before continuing forward, let's try to modify the code we had to add a label that
+            would display the color</p>
           <div class="side-by-side fragment">
             <div class="side">
               <pre lang="rust">
