@@ -65,27 +65,43 @@
 
       <section id="writing-applications-using-gtk-4-rust" class="slide level1">
         <h2>Writing applications using GTK 4 &amp; Rust</h2>
-        <ul>
-          <li class="fragment">Talk about almost complete subclassing support</li>
-          <li class="fragment">Talk about composite templates support</li>
-          <li class="fragment">Async portals API with ashpd, thanks to zbus</li>
-          <li class="fragment">Available crates: sourceview5/libadwaita/tracker-rs</li>
-        </ul>
+        <div style="display:flex;flex-direction: row; justify-content:center;">
+          <div>
+            <img width="120px" height="120px" src="https://upload.wikimedia.org/wikipedia/commons/7/71/GTK_logo.svg" />
+          </div>
+          <div>
+            <img width="120px" height="120px" src="https://rustacean.net/assets/rustacean-orig-noshadow.svg" />
+          </div>
+        </div>
+        <div style="font-size: 14px; text-align: right;">
+          Source: <a
+            href="https://github.com/bilelmoussaoui/something-somewhere-nothing">https://github.com/bilelmoussaoui/something-somewhere-nothing</a>
+          <br />
+          Slides: <a
+            href="https://bilelmoussaoui.github.io/something-somewhere-nothing">https://bilelmoussaoui.github.io/something-somewhere-nothing</a>
+        </div>
       </section>
 
       <section id="introduction" class="slide level2">
-        <h2>Introduction</h2>
-        <ul>
-          <li>The bindings are partially generated from gobject introspection data thanks to gir¹</li>
-          <li>Manual code is needed for cases like subclassing support</li>
-          <li>Rich ecosystem</li>
+        <h3>Introduction</h3>
+        <ul class="fragment">
+          <li>GTK is a user interface toolkit</li>
+          <li>Built using C, following object-oriented design pattern thanks to GLib/GObject</li>
         </ul>
+        <div class="fragment">
+          <ul>
+            <li>The bindings are partially generated from gobject introspection data thanks to gir¹</li>
+            <li>Manual code is needed for cases like subclassing support</li>
+          </ul>
 
-        <small style="margin-top: 80px;margin-right: 620px;">
-          <ol>
-            <li><a href="https://github.com/gtk-rs/gir">https://github.com/gtk-rs/gir</a></li>
-          </ol>
-        </small>
+          <small style="margin-top:60px;margin-right: 620px;">
+            <ol>
+              <li>
+                <a href="https://github.com/gtk-rs/gir">https://github.com/gtk-rs/gir</a>
+              </li>
+            </ol>
+          </small>
+        </div>
       </section>
 
       <section>
@@ -94,17 +110,15 @@
           <div class="fragment">
             <ul>
               <li>GLib Rust bindings contains the base code for creating custom GObjects, e.g subclassing.
-                <small style="margin-top: 20px;margin-bottom: 20px;"><a
-                    href="https://gtk-rs.org/gtk-rs-core/stable/latest/docs/glib/subclass">See https:
-                    //gtk-rs.org/gtk-rs-core/stable/latest/docs/glib/subclass for details</https:></a>
+                <small style="margin-top: 20px;margin-bottom: 20px;">
+                  <a href="https://gtk-rs.org/gtk-rs-core/stable/latest/docs/glib/subclass">See https:
+                    //gtk-rs.org/gtk-rs-core/stable/latest/docs/glib/subclass for details</https:>
+                  </a>
                 </small>
               </li>
-              <li>
+              <li class="fragment">
                 Thanks to the simplifications of creating custom widgets in GTK 4, the Rust bindings provides almost
                 complete subclassing support
-              </li>
-              <li>
-                Various examples in gtk4-rs/examples
               </li>
             </ul>
           </div>
@@ -113,8 +127,8 @@
         <section>
           <p>Let's see how we can create a custom glib::Object</p>
           <pre class="fragment" lang="rust">
-<code data-trim data-noescape data-line-numbers="5-6|8-13|14|3-15|17-19|21-25">
-  <script type="text/template">
+            <code data-trim data-noescape data-line-numbers="5-6|8-13|14|3-15|17-19|21-25">
+              <script type="text/template">
 
             use glib::subclass:prelude::*;
 
@@ -142,13 +156,14 @@
                 }
             }
 
-          </script>
-          </code>
+              </script>
+            </code>
           </pre>
         </section>
 
         <section>
-          <p>What if we want to create a custom <code>gtk::Widget</code>?</p>
+          <p>What if we want to create a custom <code>gtk::Widget</code>?
+          </p>
           <pre class="fragment" lang="rust">
             <code data-trim data-noescape data-line-numbers="13,16,20">
               <script type="text/template">
@@ -180,8 +195,8 @@
                     glib::Object::new(&[]).unwrap()
                 }
             }
-          </script>
-          </code>
+              </script>
+            </code>
           </pre>
         </section>
 
@@ -232,8 +247,8 @@
                   glib::Object::new(&[]).unwrap()
               }
           }
-        </script>
-      </code>
+              </script>
+            </code>
           </pre>
           <p class="fragment">
             By overriding snapshot, we tell the renderer how our widget should be displayed
@@ -273,8 +288,8 @@
                       application.run();
                   }
         
-                </code>
-              </pre>
+                  </code>
+                </pre>
             </div>
             <div class="side figure-side">
               <figure>
@@ -369,11 +384,10 @@
                 glib::Object::new(&[]).unwrap()
             }
         }
-      </script>
-      </code>
+              </script>
+            </code>
           </pre>
         </section>
-
 
         <section>
           <p>Let's see how our widget looks like</p>
@@ -413,8 +427,8 @@
                       application.run();
                   }
 
-                </code>
-              </pre>
+                  </code>
+                </pre>
             </div>
             <div class="side figure-side">
               <figure>
@@ -432,16 +446,15 @@
             <li class="fragment">Allows splitting code into model/view</li>
             <li class="fragment">More stuff here maybe?</li>
           </ul>
-          <p class="fragment">Before continuing forward, let's try to modify the subclassing example to add a label that
-            display the HEX color</p>
         </section>
         <section>
-          <div class="side-by-side">
+          <p>Before continuing forward, let's try to modify the subclassing example to add a label that
+            display the HEX color</p>
+          <div class="side-by-side fragment">
             <div class="side">
-
               <pre lang="rust">
-            <code data-trim data-noescape data-line-numbers="13|62-76|80-98|107">
-              <script type="text/template">
+                <code data-trim data-noescape data-line-numbers="13|62-76|80-98|107">
+                  <script type="text/template">
           use gtk::prelude::*;
           use gtk::subclass::prelude::*;
           use gtk::{gdk, glib, graphene};
@@ -562,9 +575,9 @@
                   glib::Object::new(&[]).unwrap()
               }
           }
-        </script>
-              </code>
-          </pre>
+                  </script>
+                </code>
+              </pre>
             </div>
             <div class="fragment side figure-side">
               <figure>
@@ -573,6 +586,43 @@
             </div>
           </div>
         </section>
+      </section>
+      <section>
+        <h3>Portals</h3>
+      </section>
+      <section>
+        <h3>Ecosystem</h3>
+        <ul>
+          <li>gtk-rs-core: bindings of glib, gio, pango, cairo, graphene and gdk-pixbuf</li>
+          <li>gstreamer-rs: bindings of the multimedia framework GStreamer</li>
+          <li>zbus: Rust D-Bus crate</li>
+          <li>ashpd: Freedesktop portals wrapper using zbus</li>
+          <li class="fragment">also sourceview5-rs, pipewire-rs, libadwaita-rs, tracker-rs</li>
+          <li class="fragment">and ton of other possibilities at crates.io</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Resources</h3>
+        <ul>
+          <li>GUI development with Rust and GTK 4: <a
+              href="https://gtk-rs.org/gtk4-rs/stable/latest/book/">https://gtk-rs.org/gtk4-rs/stable/latest/book/</a>
+          </li>
+          <li>Examples: <a
+              href="https://github.com/gtk-rs/gtk4-rs/tree/master/examples#examples">https://github.com/gtk-rs/gtk4-rs/tree/master/examples</a>
+          </li>
+          <li>Built with gtk4-rs: <a
+              href="https://github.com/gtk-rs/gtk4-rs#built-with-gtk4-rust-bindings">https://github.com/gtk-rs/gtk4-rs#built-with-gtk4-rust-bindings</a>
+          </li>
+          <li>Reach out: <a href="https://gtk-rs.org/contact">https://gtk-rs.org/contact</a>
+          </li>
+          </li>
+        </ul>
+      </section>
+      <section>
+        <h3>Thank you</h3>
+      </section>
+      <section>
+        <h3>Any questions?</h3>
       </section>
     </div>
   </div>
@@ -593,7 +643,8 @@
       slideNumber: true,
       keyboard: true,
       disableLayout: false,
-
+      transition: 'fade',
+      backgroundTransition: 'fade',
 
       // reveal.js plugins
       plugins: [
